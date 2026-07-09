@@ -1,0 +1,31 @@
+2026-07-09 13:08:18.836 CEST [23508] LOG:  starting PostgreSQL 18.3 on x86_64-windows, compiled by msvc-19.44.35225, 64-bit
+2026-07-09 13:08:18.839 CEST [23508] LOG:  listening on IPv6 address "::1", port 5432
+2026-07-09 13:08:18.839 CEST [23508] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-07-09 13:08:18.893 CEST [16140] LOG:  database system was interrupted; last known up at 2026-07-08 13:55:04 CEST
+2026-07-09 13:08:20.129 CEST [5472] LOG:  shutting down
+2026-07-09 13:08:20.129 CEST [23508] LOG:  received fast shutdown request
+2026-07-09 13:08:20.134 CEST [23508] LOG:  WAL was shut down unexpectedly
+2026-07-09 13:08:20.141 CEST [23508] LOG:  abnormal database system shutdown
+2026-07-09 13:08:20.142 CEST [23508] LOG:  database system is shut down
+2026-07-09 13:08:21.179 CEST [19724] LOG:  starting PostgreSQL 18.3 on x86_64-windows, compiled by msvc-19.44.35225, 64-bit
+2026-07-09 13:08:21.182 CEST [19724] LOG:  listening on IPv6 address "::1", port 5432
+2026-07-09 13:08:21.182 CEST [19724] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-07-09 13:08:21.220 CEST [5988] LOG:  database system was shut down in recovery at 2026-07-09 13:08:20 CEST
+2026-07-09 13:08:21.221 CEST [5988] LOG:  database system was not properly shut down; automatic recovery in progress
+2026-07-09 13:08:21.230 CEST [5988] LOG:  redo starts at 0/1672ECB0
+2026-07-09 13:08:21.230 CEST [5988] LOG:  invalid record length at 0/1672EDF0: expected at least 24, got 0
+2026-07-09 13:08:21.230 CEST [5988] LOG:  redo done at 0/1672EDB8 system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+2026-07-09 13:08:21.234 CEST [6060] LOG:  checkpoint starting: end-of-recovery immediate wait
+2026-07-09 13:08:21.248 CEST [6060] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.002 s, total=0.016 s; sync files=2, longest=0.002 s, average=0.001 s; distance=0 kB, estimate=0 kB; lsn=0/1672EDF0, redo lsn=0/1672EDF0
+2026-07-09 13:08:21.255 CEST [19724] LOG:  database system is ready to accept connections
+2026-07-09 13:13:19.346 CEST [27052] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-09 13:13:19.346 CEST [26244] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-09 13:13:19.346 CEST [22712] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-09 13:13:19.923 CEST [19724] LOG:  background worker "logical replication launcher" (PID 26468) was terminated by exception 0xC000013A
+2026-07-09 13:13:19.923 CEST [19724] HINT:  See C include file "ntstatus.h" for a description of the hexadecimal value.
+2026-07-09 13:13:19.923 CEST [19724] LOG:  terminating any other active server processes
+2026-07-09 13:13:19.925 CEST [19724] LOG:  received fast shutdown request
+^C

@@ -1,0 +1,93 @@
+from aiogram import Router, F
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from bot.keyboards.user_keyboards import get_task_keyboard
+from bot.services.botohub import get_botohub_tasks
+
+from database.repositories.user_repositories import get_or_create_user
+
+router = Router()
+
+
+@router.callback_query(F.data.startswith("start_miner:"))
+async def start_miner(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    state: FSMContext,
+) -> None:
+    await callback.answer()
+
+    await state.clear()
+
+    user_id = callback.from_user.id
+
+    is_new_user = callback.data.split(":")[1] == "True"
+    user = await get_or_create_user(session, user_id)
+
+    await callback.message.delete()
+
+    if is_new_user:
+        text = (
+            "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
+            f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
+            f"› 👥 Рефералов: <b>{user.balance}</b>\n\n"
+            "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
+        )
+        await callback.message.answer(text)
+    else:
+        response = await get_botohub_tasks(user_id)
+        tasks = response.get("tasks")
+        completed = response.get("completed")
+        skip = response.get("skip")
+        if skip or not tasks:
+            await callback.message.answer(
+                "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
+            )
+        elif not completed:
+            await callback.message.answer(
+                "Чтобы продолжить зарабатывать, выполните задания:",
+                reply_markup=get_task_keyboard(tasks, user_id),
+            )
+        else:
+            await callback.message.answer(
+                "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
+            )
+
+
+@router.callback_query(F.data.startswith("check_tasks:"))
+async def check_tasks(
+    callback: CallbackQuery,
+    session: AsyncSession,
+    state: FSMContext,
+) -> None:
+    await callback.answer()
+
+    await state.clear()
+
+    user_id = callback.from_user.id
+    user = await get_or_create_user(session, user_id)
+
+    await callback.message.delete()
+
+    response = await get_botohub_tasks(user_id)
+    tasks = response.get("tasks")
+    completed = response.get("completed")
+    skip = response.get("skip")
+
+    if skip or not tasks:
+        await callback.message.answer(
+            "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
+        )
+    elif not completed:
+        await callback.message.answer(
+            "Чтобы продолжить зарабатывать, выполните задания:",
+            reply_markup=get_task_keyboard(tasks, user_id),
+        )
+    else:
+        await callback.message.answer(
+            "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
+        )

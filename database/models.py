@@ -18,11 +18,10 @@ class User(Base):
     __tablename__ = "users"
 
     id = mapped_column(BigInteger, primary_key=True)
-    balance = mapped_column(Numeric(12, 2), default=0)
+    balance = mapped_column(Numeric(12, 2), default=1)
     is_banned = mapped_column(Boolean, default=False)
-    wins = mapped_column(Integer, default=0)
-    win_rate = mapped_column(Integer, default=0)
-    total_wagered = mapped_column(Numeric(12, 2), default=0)
+    mining_per_hour = mapped_column(Integer, default=1)
+    is_mining = mapped_column(Boolean, default=False)
 
     referral = relationship(
         "Referral",
@@ -43,6 +42,7 @@ class Referral(Base):
     id = mapped_column(BigInteger, primary_key=True)
     user_id = mapped_column(BigInteger, ForeignKey("users.id"))
     referral_id = mapped_column(BigInteger)
+    is_active = mapped_column(Boolean, default=False)
 
     user = relationship(
         "User",

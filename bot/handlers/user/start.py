@@ -14,6 +14,8 @@ from database.repositories.user_repositories import (
     create_referral,
     get_or_create_user,
     get_user_by_id,
+    increase_mining_speed,
+    start_miner
 )
 
 router = Router()
@@ -51,11 +53,19 @@ async def start(
                         )
 
                         if referral is None:
-                            await create_referral(
+                            created = await create_referral(
                                 session,
                                 user.id,
                                 referrer_id,
                             )
+
+                            if created:
+                                await increase_mining_speed(
+                                    session,
+                                    referrer_id,
+                                    0.1,
+                                )
+
     if user.is_mining:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
@@ -65,8 +75,7 @@ async def start(
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
         await message.answer(text)
-
-    elif not user.is_mining:
+    else:
         text = (
             "🔴 <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"
             f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"

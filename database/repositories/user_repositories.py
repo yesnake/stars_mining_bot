@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
@@ -46,7 +48,7 @@ async def check_referral(
 
 async def create_referral(
     session: AsyncSession, user_id: int, referrer_id: int
-) -> None:
+) -> bool:
     referral = Referral(user_id=referrer_id, referral_id=user_id)
     session.add(referral)
 
@@ -54,5 +56,32 @@ async def create_referral(
         await session.flush()
         await session.commit()
         await session.refresh(referral)
+        return True
+    except IntegrityError:
+        await session.rollback()
+        return False
+
+
+async def increase_mining_speed(session, user_id, amount) -> None:
+    user = await get_or_create_user(session, user_id)
+    user.mining_per_hour += Decimal(str(amount))
+
+    try:
+        await session.flush()
+        await session.commit()
+        await session.refresh(user)
+    except IntegrityError:
+        await session.rollback()
+
+
+async def start_miner(session: AsyncSession, user_id: int) -> None:
+    user = await get_or_create_user(session, user_id)
+
+    user.is_mining = True
+
+    try:
+        await session.flush()
+        await session.commit()
+        await session.refresh(user)
     except IntegrityError:
         await session.rollback()

@@ -20,7 +20,7 @@ class User(Base):
     id = mapped_column(BigInteger, primary_key=True)
     balance = mapped_column(Numeric(12, 2), default=1)
     is_banned = mapped_column(Boolean, default=False)
-    mining_per_hour = mapped_column(Integer, default=1)
+    mining_per_hour = mapped_column(Numeric(4, 2), default=1)
     is_mining = mapped_column(Boolean, default=False)
 
     referral = relationship(

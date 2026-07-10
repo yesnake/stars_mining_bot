@@ -4,8 +4,7 @@ from aiogram.types import CallbackQuery
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.keyboards.user_keyboards import get_task_keyboard
-from bot.services.botohub import get_botohub_tasks
+from bot.services.botohub import send_task_status
 
 from database.repositories.user_repositories import get_or_create_user
 
@@ -39,23 +38,7 @@ async def start_miner(
         )
         await callback.message.answer(text)
     else:
-        response = await get_botohub_tasks(user_id)
-        tasks = response.get("tasks")
-        completed = response.get("completed")
-        skip = response.get("skip")
-        if skip or not tasks:
-            await callback.message.answer(
-                "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
-            )
-        elif not completed:
-            await callback.message.answer(
-                "Чтобы продолжить зарабатывать, выполните задания:",
-                reply_markup=get_task_keyboard(tasks, user_id),
-            )
-        else:
-            await callback.message.answer(
-                "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
-            )
+        await send_task_status(session, callback, user_id)
 
 
 @router.callback_query(F.data.startswith("check_tasks:"))
@@ -73,21 +56,4 @@ async def check_tasks(
 
     await callback.message.delete()
 
-    response = await get_botohub_tasks(user_id)
-    tasks = response.get("tasks")
-    completed = response.get("completed")
-    skip = response.get("skip")
-
-    if skip or not tasks:
-        await callback.message.answer(
-            "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
-        )
-    elif not completed:
-        await callback.message.answer(
-            "Чтобы продолжить зарабатывать, выполните задания:",
-            reply_markup=get_task_keyboard(tasks, user_id),
-        )
-    else:
-        await callback.message.answer(
-            "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
-        )
+    await send_task_status(session, callback, user_id)

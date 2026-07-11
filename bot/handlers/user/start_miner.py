@@ -8,8 +8,6 @@ from bot.services.botohub import send_task_status
 
 from database.repositories.user_repositories import (
     get_or_create_user,
-    start_miner,
-    get_referrals_count,
 )
 
 router = Router()

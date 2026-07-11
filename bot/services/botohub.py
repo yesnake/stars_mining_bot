@@ -4,7 +4,11 @@ from aiogram.types import CallbackQuery
 
 from bot.keyboards.user_keyboards import get_task_keyboard
 
-from database.repositories.user_repositories import start_miner, get_or_create_user
+from database.repositories.user_repositories import (
+    start_miner,
+    get_or_create_user,
+    get_referrals_count,
+)
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,12 +49,14 @@ async def send_task_status(
     completed = response.get("completed")
     skip = response.get("skip")
 
+    active_referrals_count = await get_referrals_count(session, user.id)
+
     if skip or not tasks:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
             f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
             f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
-            f"› 👥 Рефералов: <b>{user.balance}</b>\n\n"
+            f"› 👥 Рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
         await callback.message.answer(text)
@@ -58,8 +64,8 @@ async def send_task_status(
         return True
     elif not completed:
         text = (
-            "‼️<b>ПОСЛЕ ПОДПИСКИ НА ЭТИ КАНАЛЫ ТЫ БУДЕШЬ ПОЛУЧАТЬ 1⭐/ЧАС НИЧЕГО НЕ ДЕЛАЯ:</b>\n\n",
-            "<blockquote>❤️ Не у всех есть такая уникальная возможность!</blockquote>",
+            "‼️<b>ПОСЛЕ ПОДПИСКИ НА ЭТИ КАНАЛЫ ТЫ БУДЕШЬ ПОЛУЧАТЬ 1⭐/ЧАС НИЧЕГО НЕ ДЕЛАЯ:</b>\n\n"
+            "<blockquote>❤️ Не у всех есть такая уникальная возможность!</blockquote>"
         )
         await callback.message.answer(
             text,
@@ -71,7 +77,7 @@ async def send_task_status(
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
             f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
             f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
-            f"› 👥 Рефералов: <b>{user.balance}</b>\n\n"
+            f"› 👥 Рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
         await callback.message.answer(text)

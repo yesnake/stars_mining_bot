@@ -15,6 +15,7 @@ from bot.middlewares import DBSessionMiddleware
 from bot.handlers import setup_routers
 
 from config_reader import config
+from bot.services.miner_monitor import MinerMonitor
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,9 +47,12 @@ _sessionmaker = async_sessionmaker(
 
 dp.update.middleware(DBSessionMiddleware(_sessionmaker))
 
+miner_monitor = MinerMonitor(bot, _sessionmaker)
+
 
 @dp.startup()
 async def on_startup() -> None:
+    miner_monitor.start()
     logger.info("Bot starting up...")
     await bot.delete_webhook(drop_pending_updates=True)
 
@@ -61,6 +65,7 @@ async def on_startup() -> None:
 @dp.shutdown()
 async def on_shutdown() -> None:
     logger.info("Bot shutting down...")
+    await miner_monitor.stop()
     await bot.session.close()
     await _engine.dispose()
     logger.info("Bot stopped")

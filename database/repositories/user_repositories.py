@@ -1,8 +1,9 @@
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from database import User, Referral
 
@@ -77,9 +78,25 @@ async def get_referral_by_referred_user_id(
     return result.scalar_one_or_none()
 
 
-async def increase_mining_speed(session: AsyncSession, user_id: int, amount: float) -> None:
+async def increase_mining_speed(
+    session: AsyncSession, user_id: int, amount: float
+) -> None:
     user = await get_or_create_user(session, user_id)
     user.mining_per_hour += Decimal(str(amount))
+
+    try:
+        await session.flush()
+        await session.commit()
+        await session.refresh(user)
+    except IntegrityError:
+        await session.rollback()
+
+
+async def decrease_mining_speed(
+    session: AsyncSession, user_id: int, amount: float
+) -> None:
+    user = await get_or_create_user(session, user_id)
+    user.mining_per_hour -= Decimal(str(amount))
 
     try:
         await session.flush()
@@ -92,6 +109,7 @@ async def increase_mining_speed(session: AsyncSession, user_id: int, amount: flo
 async def start_miner(session: AsyncSession, user_id: int) -> None:
     user = await get_or_create_user(session, user_id)
     user.is_mining = True
+    user.mining_started_at = datetime.utcnow()
 
     referral = await get_referral_by_referred_user_id(session, user_id)
     if referral and not referral.is_active:
@@ -105,3 +123,64 @@ async def start_miner(session: AsyncSession, user_id: int) -> None:
         await session.refresh(user)
     except IntegrityError:
         await session.rollback()
+
+
+async def stop_miner(session: AsyncSession, user_id: int) -> bool:
+    user = await get_or_create_user(session, user_id)
+
+    if not user.is_mining:
+        return False
+
+    user.is_mining = False
+    user.mining_started_at = None
+
+    referral = await get_referral_by_referred_user_id(session, user_id)
+    if referral and referral.is_active:
+        referrer = await get_or_create_user(session, referral.user_id)
+        await decrease_mining_speed(session, referrer.id, 0.1)
+        referral.is_active = False
+
+    try:
+        await session.flush()
+        await session.commit()
+        await session.refresh(user)
+    except IntegrityError:
+        await session.rollback()
+        return False
+
+    return True
+
+
+async def stop_expired_miners(session: AsyncSession):
+    threshold = datetime.utcnow() - timedelta(minutes=1)
+
+    result = await session.execute(
+        select(User).where(
+            User.is_mining.is_(True),
+            User.mining_started_at.is_not(None),
+            User.mining_started_at <= threshold,
+        )
+    )
+
+    expired_users = result.scalars().all()
+
+    if expired_users:
+        for user in expired_users:
+            referral = await get_referral_by_referred_user_id(session, user.id)
+            if referral and referral.is_active:
+                referrer = await get_or_create_user(session, referral.user_id)
+                referrer.mining_per_hour -= Decimal("0.1")
+                referral.is_active = False
+
+        await session.execute(
+            update(User)
+            .where(User.id.in_([user.id for user in expired_users]))
+            .values(
+                is_mining=False,
+                mining_started_at=None,
+            )
+        )
+
+        await session.commit()
+
+    return expired_users

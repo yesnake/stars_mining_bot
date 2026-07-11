@@ -76,6 +76,7 @@ async def start_handler(
             f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
             f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
             f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
+            f"<b>Нажми на кнопку ниже, чтобы запустить генератор!</b>\n\n"
             "<blockquote>⚠️ Пока генератор выключен, ⭐ не начисляются.</blockquote>"
         )
         await message.answer(text, reply_markup=get_start_miner_keyboard())

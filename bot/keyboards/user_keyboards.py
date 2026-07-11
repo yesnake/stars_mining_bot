@@ -1,13 +1,13 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def get_start_miner_keyboard(new_user: bool) -> InlineKeyboardMarkup:
+def get_start_miner_keyboard() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
                     text="🚀 Запустить генератор",
-                    callback_data=f"start_miner:{new_user}",
+                    callback_data=f"start_miner",
                     style="success",
                 )
             ],

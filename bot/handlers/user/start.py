@@ -13,16 +13,16 @@ from database.repositories.user_repositories import (
     check_referral,
     create_referral,
     get_or_create_user,
+    get_referrals_count,
     get_user_by_id,
     increase_mining_speed,
-    start_miner
 )
 
 router = Router()
 
 
 @router.message(CommandStart())
-async def start(
+async def start_handler(
     message: Message,
     command: CommandObject,
     session: AsyncSession,
@@ -53,25 +53,20 @@ async def start(
                         )
 
                         if referral is None:
-                            created = await create_referral(
+                            await create_referral(
                                 session,
                                 user.id,
                                 referrer_id,
                             )
 
-                            if created:
-                                await increase_mining_speed(
-                                    session,
-                                    referrer_id,
-                                    0.1,
-                                )
+    active_referrals_count = await get_referrals_count(session, user.id)
 
     if user.is_mining:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
             f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
             f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
-            f"› 👥 Рефералов: <b>{user.balance}</b>\n\n"
+            f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
         await message.answer(text)
@@ -80,7 +75,7 @@ async def start(
             "🔴 <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"
             f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
             f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
-            f"› 👥 Рефералов: <b>{user.balance}</b>\n\n"
+            f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>⚠️ Пока генератор выключен, ⭐ не начисляются.</blockquote>"
         )
-        await message.answer(text, reply_markup=get_start_miner_keyboard(is_new_user))
+        await message.answer(text, reply_markup=get_start_miner_keyboard())

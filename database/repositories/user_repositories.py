@@ -48,7 +48,7 @@ async def check_referral(
 
 async def create_referral(
     session: AsyncSession, user_id: int, referrer_id: int
-) -> bool:
+) -> None:
     referral = Referral(user_id=referrer_id, referral_id=user_id)
     session.add(referral)
 
@@ -56,13 +56,28 @@ async def create_referral(
         await session.flush()
         await session.commit()
         await session.refresh(referral)
-        return True
     except IntegrityError:
         await session.rollback()
-        return False
 
 
-async def increase_mining_speed(session, user_id, amount) -> None:
+async def get_referrals_count(session: AsyncSession, user_id: int) -> int:
+    result = await session.execute(
+        select(Referral).where(Referral.user_id == user_id, Referral.is_active == True)
+    )
+    referrals = result.scalars().all()
+    return len(referrals)
+
+
+async def get_referral_by_referred_user_id(
+    session: AsyncSession, user_id: int
+) -> Referral | None:
+    result = await session.execute(
+        select(Referral).where(Referral.referral_id == user_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def increase_mining_speed(session: AsyncSession, user_id: int, amount: float) -> None:
     user = await get_or_create_user(session, user_id)
     user.mining_per_hour += Decimal(str(amount))
 
@@ -76,8 +91,13 @@ async def increase_mining_speed(session, user_id, amount) -> None:
 
 async def start_miner(session: AsyncSession, user_id: int) -> None:
     user = await get_or_create_user(session, user_id)
-
     user.is_mining = True
+
+    referral = await get_referral_by_referred_user_id(session, user_id)
+    if referral and not referral.is_active:
+        referrer = await get_or_create_user(session, referral.user_id)
+        await increase_mining_speed(session, referrer.id, 0.1)
+        referral.is_active = True
 
     try:
         await session.flush()

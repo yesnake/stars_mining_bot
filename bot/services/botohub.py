@@ -34,24 +34,46 @@ async def get_botohub_tasks(chat_id: int) -> dict:
 
             return data
 
-async def send_task_status(session: AsyncSession, callback: CallbackQuery, user_id: int) -> None:
+
+async def send_task_status(
+    session: AsyncSession, callback: CallbackQuery, user_id: int
+) -> bool:
+    user = await get_or_create_user(session, user_id)
+
     response = await get_botohub_tasks(user_id)
     tasks = response.get("tasks")
     completed = response.get("completed")
     skip = response.get("skip")
 
     if skip or not tasks:
-        await callback.message.answer(
-            "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
+        text = (
+            "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
+            f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
+            f"› 👥 Рефералов: <b>{user.balance}</b>\n\n"
+            "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
+        await callback.message.answer(text)
         await start_miner(session, user_id)
+        return True
     elif not completed:
+        text = (
+            "‼️<b>ПОСЛЕ ПОДПИСКИ НА ЭТИ КАНАЛЫ ТЫ БУДЕШЬ ПОЛУЧАТЬ 1⭐/ЧАС НИЧЕГО НЕ ДЕЛАЯ:</b>\n\n",
+            "<blockquote>❤️ Не у всех есть такая уникальная возможность!</blockquote>",
+        )
         await callback.message.answer(
-            "Чтобы продолжить зарабатывать, выполните задания:",
+            text,
             reply_markup=get_task_keyboard(tasks, user_id),
         )
+        return False
     else:
-        await callback.message.answer(
-            "✅ Вы успешно выполнили все задания! Продолжайте зарабатывать ⭐!"
+        text = (
+            "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
+            f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
+            f"› 👥 Рефералов: <b>{user.balance}</b>\n\n"
+            "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
+        await callback.message.answer(text)
         await start_miner(session, user_id)
+        return True

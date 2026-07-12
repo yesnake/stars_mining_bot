@@ -1,2 +1,2 @@
 from .base import Base
-from .models import User, Referral, Transaction
+from .models import User, Referral

@@ -7,15 +7,15 @@ from aiogram.types import Message
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.keyboards.user_keyboards import get_start_miner_keyboard
+from bot.keyboards.user_keyboards import get_mining_keyboard, get_start_miner_keyboard
 
 from database.repositories.user_repositories import (
     check_referral,
     create_referral,
     get_or_create_user,
     get_referrals_count,
-    get_user_by_id,
-    increase_mining_speed,
+    get_total_balance,
+    get_user_by_id
 )
 
 router = Router()
@@ -61,20 +61,22 @@ async def start_handler(
 
     active_referrals_count = await get_referrals_count(session, user.id)
 
+    total_balance = await get_total_balance(session, user.id)
+
     if user.is_mining:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
-            f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
-            f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
+            f"› 💰 Баланс: <b>{total_balance:.4f} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{user.mining_per_hour:.2f} ⭐/час</b>\n"
             f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
-        await message.answer(text)
+        await message.answer(text, reply_markup=get_mining_keyboard())
     else:
         text = (
             "🔴 <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"
-            f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
-            f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
+            f"› 💰 Баланс: <b>{total_balance:.4f} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{user.mining_per_hour:.2f} ⭐/час</b>\n"
             f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
             f"<b>Нажми на кнопку ниже, чтобы запустить генератор!</b>\n\n"
             "<blockquote>⚠️ Пока генератор выключен, ⭐ не начисляются.</blockquote>"

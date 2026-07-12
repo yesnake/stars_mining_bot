@@ -2,12 +2,13 @@ import aiohttp
 
 from aiogram.types import CallbackQuery
 
-from bot.keyboards.user_keyboards import get_task_keyboard
+from bot.keyboards.user_keyboards import get_mining_keyboard, get_task_keyboard
 
 from database.repositories.user_repositories import (
     start_miner,
     get_or_create_user,
     get_referrals_count,
+    get_total_balance
 )
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,16 +51,17 @@ async def send_task_status(
     skip = response.get("skip")
 
     active_referrals_count = await get_referrals_count(session, user.id)
+    total_balance = await get_total_balance(session, user.id)
 
     if skip or not tasks:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
-            f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
-            f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
+            f"› 💰 Баланс: <b>{total_balance:.4f} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{user.mining_per_hour:.2f} ⭐/час</b>\n"
             f"› 👥 Рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
-        await callback.message.answer(text)
+        await callback.message.answer(text, reply_markup=get_mining_keyboard())
         await start_miner(session, user_id)
         return True
     elif not completed:
@@ -75,11 +77,11 @@ async def send_task_status(
     else:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
-            f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
-            f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
+            f"› 💰 Баланс: <b>{total_balance:.4f} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{user.mining_per_hour:.2f} ⭐/час</b>\n"
             f"› 👥 Рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
-        await callback.message.answer(text)
+        await callback.message.answer(text, reply_markup=get_mining_keyboard())
         await start_miner(session, user_id)
         return True

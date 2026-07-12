@@ -34,3 +34,18 @@ def get_task_keyboard(tasks: list[str], user_id: int) -> InlineKeyboardMarkup:
         ]
     )
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+def get_mining_keyboard() -> InlineKeyboardMarkup:
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🔄 Обновить баланс",
+                    callback_data=f"refresh_miner",
+                    style="success",
+                )
+            ],
+        ]
+    )
+    return keyboard

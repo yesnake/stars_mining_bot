@@ -28,8 +28,8 @@ class MinerMonitor:
                             active_referrals_count = await get_referrals_count(session, user.id)
                             text = (
                                 "🔴 <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"
-                                f"› 💰 Баланс: <b>{user.balance} ⭐</b>\n"
-                                f"› ⚡ Скорость: <b>{user.mining_per_hour} ⭐/час</b>\n"
+                                f"› 💰 Баланс: <b>{user.balance:.4f} ⭐</b>\n"
+                                f"› ⚡ Скорость: <b>{user.mining_per_hour:.2f} ⭐/час</b>\n"
                                 f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
                                 f"<b>Нажми на кнопку ниже, чтобы запустить генератор!</b>\n\n"
                                 "<blockquote>⚠️ Пока генератор выключен, ⭐ не начисляются.</blockquote>"
@@ -38,7 +38,7 @@ class MinerMonitor:
             except Exception as e:
                 logger.exception("Failed to stop expired miners: %s", e)
 
-            await asyncio.sleep(60)
+            await asyncio.sleep(3600)
 
     def start(self) -> None:
         if self._task is None:

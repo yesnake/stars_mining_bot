@@ -11,11 +11,12 @@ from sqlalchemy.ext.asyncio import (
 
 from database import Base
 
-from bot.middlewares import DBSessionMiddleware
+from bot.middlewares import DBSessionMiddleware, error_handler
 from bot.handlers import setup_routers
 
 from config_reader import config
 from bot.services.miner_monitor import MinerMonitor
+from database.repositories.user_repositories import ensure_user_activity_columns
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,35 +30,40 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-bot = Bot(
-    token=config.BOT_TOKEN.get_secret_value(),
-    default=DefaultBotProperties(parse_mode="HTML"),
+_engine = create_async_engine(
+    config.DB_URL.get_secret_value(),
+    pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=20,
+    pool_recycle=3600,
+    echo=False,
 )
-
-dp = Dispatcher()
-
-dp.include_routers(*setup_routers())
-
-_engine = create_async_engine(config.DB_URL.get_secret_value())
 
 _sessionmaker = async_sessionmaker(
     _engine,
     expire_on_commit=False,
 )
 
+bot = Bot(
+    token=config.BOT_TOKEN.get_secret_value(),
+    default=DefaultBotProperties(parse_mode="HTML"),
+)
+
+dp = Dispatcher()
+dp.include_routers(*setup_routers())
 dp.update.middleware(DBSessionMiddleware(_sessionmaker))
+dp.error.register(error_handler)
 
 miner_monitor = MinerMonitor(bot, _sessionmaker)
 
 
 @dp.startup()
 async def on_startup() -> None:
-    miner_monitor.start()
     logger.info("Bot starting up...")
     await bot.delete_webhook(drop_pending_updates=True)
 
-    async with _engine.begin() as connection:
-        await connection.run_sync(Base.metadata.create_all)
+    await ensure_user_activity_columns(_engine)
+    miner_monitor.start()
 
     logger.info("Bot started successfully")
 

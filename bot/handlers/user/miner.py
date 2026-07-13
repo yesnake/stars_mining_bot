@@ -6,11 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards.user_keyboards import get_mining_keyboard, get_start_miner_keyboard
 from bot.services.botohub import send_task_status
+from bot.utils import format_balance, format_speed
 
 from database.repositories.user_repositories import (
     get_or_create_user,
     get_referrals_count,
     get_total_balance,
+    mark_user_activity,
 )
 
 router = Router()
@@ -29,6 +31,7 @@ async def start_miner_handler(
     user_id = callback.from_user.id
 
     user = await get_or_create_user(session, user_id)
+    await mark_user_activity(session, user_id)
 
     await callback.message.delete()
 
@@ -47,6 +50,7 @@ async def check_tasks_handler(
 
     user_id = callback.from_user.id
     user = await get_or_create_user(session, user_id)
+    await mark_user_activity(session, user_id)
 
     await callback.message.delete()
 
@@ -66,6 +70,7 @@ async def refresh_miner_handler(
     user_id = callback.from_user.id
 
     user = await get_or_create_user(session, user_id)
+    await mark_user_activity(session, user_id)
 
     await callback.message.delete()
 
@@ -75,8 +80,8 @@ async def refresh_miner_handler(
     if user.is_mining:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
-            f"› 💰 Баланс: <b>{total_balance:.4f} ⭐</b>\n"
-            f"› ⚡ Скорость: <b>{user.mining_per_hour:.2f} ⭐/час</b>\n"
+            f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
             f"› 👥 Рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
@@ -84,8 +89,8 @@ async def refresh_miner_handler(
     else:
         text = (
             "🔴 <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"
-            f"› 💰 Баланс: <b>{total_balance:.4f} ⭐</b>\n"
-            f"› ⚡ Скорость: <b>{user.mining_per_hour:.2f} ⭐/час</b>\n"
+            f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
             f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
             f"<b>Нажми на кнопку ниже, чтобы запустить генератор!</b>\n\n"
             "<blockquote>⚠️ Пока генератор выключен, ⭐ не начисляются.</blockquote>"

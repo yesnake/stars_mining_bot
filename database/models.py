@@ -1,3 +1,5 @@
+from datetime import timezone
+
 from sqlalchemy import (
     BigInteger,
     DateTime,
@@ -18,8 +20,10 @@ class User(Base):
     is_banned = mapped_column(Boolean, default=False)
     mining_per_hour = mapped_column(Numeric(8, 4), default=1)
     is_mining = mapped_column(Boolean, default=False)
-    mining_started_at = mapped_column(DateTime, nullable=True)
+    mining_started_at = mapped_column(DateTime(timezone=True), nullable=True)
     mining_speed_snapshot = mapped_column(Numeric(8, 4), nullable=True)
+    last_activity_at = mapped_column(DateTime(timezone=True), nullable=True)
+    last_miner_warning_at = mapped_column(DateTime(timezone=True), nullable=True)
 
     referral = relationship(
         "Referral",

@@ -3,6 +3,7 @@ import aiohttp
 from aiogram.types import CallbackQuery
 
 from bot.keyboards.user_keyboards import get_mining_keyboard, get_task_keyboard
+from bot.utils import format_balance, format_speed
 
 from database.repositories.user_repositories import (
     start_miner,
@@ -28,16 +29,18 @@ async def get_botohub_tasks(chat_id: int) -> dict:
         "chat_id": chat_id,
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            BOTOHUB_API_URL, json=payload, headers=headers
-        ) as response:
-            data = await response.json()
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+            async with session.post(
+                BOTOHUB_API_URL, json=payload, headers=headers
+            ) as response:
+                if response.status != 200:
+                    return {"tasks": [], "completed": True, "skip": True}
 
-            if response.status != 200:
-                return {"tasks": [], "completed": True, "skip": True}
-
-            return data
+                data = await response.json()
+                return data
+    except Exception:
+        return {"tasks": [], "completed": True, "skip": True}
 
 
 async def send_task_status(
@@ -56,8 +59,8 @@ async def send_task_status(
     if skip or not tasks:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
-            f"› 💰 Баланс: <b>{total_balance:.4f} ⭐</b>\n"
-            f"› ⚡ Скорость: <b>{user.mining_per_hour:.2f} ⭐/час</b>\n"
+            f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
             f"› 👥 Рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )
@@ -77,8 +80,8 @@ async def send_task_status(
     else:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
-            f"› 💰 Баланс: <b>{total_balance:.4f} ⭐</b>\n"
-            f"› ⚡ Скорость: <b>{user.mining_per_hour:.2f} ⭐/час</b>\n"
+            f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
             f"› 👥 Рефералов: <b>{active_referrals_count}</b>\n\n"
             "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
         )

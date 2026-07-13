@@ -7,8 +7,7 @@ def get_start_miner_keyboard() -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(
                     text="🚀 Запустить генератор",
-                    callback_data=f"start_miner",
-                    style="success",
+                    callback_data="start_miner",
                 )
             ],
         ]
@@ -42,8 +41,7 @@ def get_mining_keyboard() -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(
                     text="🔄 Обновить баланс",
-                    callback_data=f"refresh_miner",
-                    style="success",
+                    callback_data="refresh_miner",
                 )
             ],
         ]

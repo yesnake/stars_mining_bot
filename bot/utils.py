@@ -16,11 +16,13 @@ class ErrorHandler:
         error: Exception,
         context: str = "operation",
     ) -> None:
-        logger.error(f"Error during {context} for user {user_id}: {error}", exc_info=True)
+        logger.error(
+            f"Error during {context} for user {user_id}: {error}", exc_info=True
+        )
         try:
             await bot.send_message(
                 user_id,
-                "⚠️ Произошла ошибка. Попробуйте позже или обратитесь в поддержку."
+                "⚠️ Произошла ошибка. Попробуйте позже или обратитесь в поддержку.",
             )
         except Exception as notify_error:
             logger.error(f"Failed to notify user {user_id}: {notify_error}")
@@ -31,7 +33,9 @@ class ErrorHandler:
 
 
 @asynccontextmanager
-async def safe_session(sessionmaker: async_sessionmaker) -> AsyncGenerator[AsyncSession, None]:
+async def safe_session(
+    sessionmaker: async_sessionmaker,
+) -> AsyncGenerator[AsyncSession, None]:
     session = sessionmaker()
     try:
         yield session
@@ -55,3 +59,7 @@ def format_speed(value: Any) -> str:
         return f"{float(value):.2f}"
     except (ValueError, TypeError):
         return "0.00"
+
+
+def get_boost_status_line(boost_active: bool) -> str:
+    return "› 🚀 Буст x2 <b>активирован</b>\n\n" if boost_active else ""

@@ -8,7 +8,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards.user_keyboards import get_mining_keyboard, get_start_miner_keyboard
-from bot.utils import format_balance, format_speed
+from bot.utils import format_balance, format_speed, get_boost_status_line
 
 from database.repositories.user_repositories import (
     check_referral,
@@ -67,16 +67,19 @@ async def start_handler(
     total_balance = await get_total_balance(session, user.id)
     me = await message.bot.get_me()
 
+    boost_line = get_boost_status_line(user.boost_active)
+
     if user.is_mining:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
             f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
             f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
-            f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
+            f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n"
+            f"{boost_line}"
             f"<blockquote>🔗 Твоя реф. ссылка: <code>https://t.me/{me.username}?start=r_{message.from_user.id}</code>\n\n"
             "🎁 Ты будешь получать +0.1⭐/час за каждого друга с активным генератором</blockquote>"
         )
-        await message.answer(text, reply_markup=get_mining_keyboard())
+        await message.answer(text, reply_markup=get_mining_keyboard(me.username, user_id))
     else:
         text = (
             "❌ <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"

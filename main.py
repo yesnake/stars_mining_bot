@@ -16,7 +16,8 @@ from bot.handlers import setup_routers
 
 from config_reader import config
 from bot.services.miner_monitor import MinerMonitor
-from database.repositories.user_repositories import ensure_user_activity_columns
+
+from database.init_database import init_database
 
 logging.basicConfig(
     level=logging.INFO,
@@ -62,7 +63,8 @@ async def on_startup() -> None:
     logger.info("Bot starting up...")
     await bot.delete_webhook(drop_pending_updates=True)
 
-    await ensure_user_activity_columns(_engine)
+    await init_database(_engine)
+    
     miner_monitor.start()
 
     logger.info("Bot started successfully")

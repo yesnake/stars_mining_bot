@@ -6,7 +6,10 @@ from datetime import datetime, timedelta, timezone
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from bot.keyboards.user_keyboards import get_start_miner_keyboard
+from bot.keyboards.user_keyboards import (
+    get_start_miner_keyboard,
+    get_activate_boost_keyboard,
+)
 from bot.utils import format_balance, format_speed
 from database.repositories.user_repositories import (
     get_inactive_users_for_warning,
@@ -14,6 +17,8 @@ from database.repositories.user_repositories import (
     get_total_balance,
     mark_miner_warning_sent,
     stop_expired_miners,
+    get_expired_boosts,
+    deactivate_boost,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,7 +34,7 @@ class MinerMonitor:
         return datetime.now(timezone.utc)
 
     async def _notify_inactive_users(self, session) -> None:
-        cutoff = (await self._utc_now()) - timedelta(hours=2)
+        cutoff = (await self._utc_now()) - timedelta(hours=10)
         inactive_users = await get_inactive_users_for_warning(session, cutoff)
 
         for user in inactive_users:
@@ -67,6 +72,27 @@ class MinerMonitor:
                             )
                             await self.bot.send_message(
                                 user.id, text, reply_markup=get_start_miner_keyboard()
+                            )
+
+                    expired_boosts = await get_expired_boosts(session)
+
+                    for user in expired_boosts:
+                        with suppress(Exception):
+                            await deactivate_boost(session, user.id)
+
+                            active_referrals_count = await get_referrals_count(
+                                session, user.id
+                            )
+                            total_balance = await get_total_balance(session, user.id)
+
+                            text = (
+                                "⏰ <b>БУСТ ЗАКОНЧИЛСЯ</b>\n\n"
+                                "<blockquote>❗ Твоя скорость майнинга вернулась к обычной</blockquote>"
+                            )
+                            await self.bot.send_message(
+                                user.id,
+                                text,
+                                reply_markup=get_activate_boost_keyboard(),
                             )
 
                     await self._notify_inactive_users(session)

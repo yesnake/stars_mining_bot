@@ -16,7 +16,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = mapped_column(BigInteger, primary_key=True)
-    balance = mapped_column(Numeric(12, 4), default=1)
+    balance = mapped_column(Numeric(12, 4), default=0)
     is_banned = mapped_column(Boolean, default=False)
     mining_per_hour = mapped_column(Numeric(8, 4), default=1)
     is_mining = mapped_column(Boolean, default=False)
@@ -24,6 +24,8 @@ class User(Base):
     mining_speed_snapshot = mapped_column(Numeric(8, 4), nullable=True)
     last_activity_at = mapped_column(DateTime(timezone=True), nullable=True)
     last_miner_warning_at = mapped_column(DateTime(timezone=True), nullable=True)
+    boost_active = mapped_column(Boolean, default=False)
+    boost_expires_at = mapped_column(DateTime(timezone=True), nullable=True)
 
     referral = relationship(
         "Referral",

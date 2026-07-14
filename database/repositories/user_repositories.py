@@ -3,48 +3,13 @@ from decimal import Decimal
 
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import Base, Referral, User
+from database import Referral, User
 
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
-
-
-async def ensure_user_activity_columns(engine: AsyncEngine) -> None:
-    async with engine.begin() as connection:
-        table_exists_result = await connection.execute(text("""
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM information_schema.tables
-                    WHERE table_schema = 'public' AND table_name = 'users'
-                )
-                """))
-        if not table_exists_result.scalar():
-            await connection.run_sync(Base.metadata.create_all)
-            return
-
-        columns_result = await connection.execute(text("""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_schema = 'public' AND table_name = 'users'
-                """))
-        columns = {row[0] for row in columns_result.fetchall()}
-
-        if "last_activity_at" not in columns:
-            await connection.execute(
-                text(
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ"
-                )
-            )
-        if "last_miner_warning_at" not in columns:
-            await connection.execute(
-                text(
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_miner_warning_at TIMESTAMPTZ"
-                )
-            )
-
 
 async def get_or_create_user(
     session: AsyncSession,
@@ -256,7 +221,7 @@ async def start_miner(
 async def stop_expired_miners(
     session: AsyncSession,
 ) -> list[User]:
-    threshold = _now_utc() - timedelta(minutes=1)
+    threshold = _now_utc() - timedelta(hours=1)
 
     result = await session.execute(
         select(User).where(
@@ -308,3 +273,55 @@ async def stop_expired_miners(
     await session.commit()
 
     return expired_users
+
+
+async def activate_boost(
+    session: AsyncSession,
+    user_id: int,
+) -> None:
+    user = await get_or_create_user(session, user_id)
+
+    user.mining_per_hour *= Decimal("2")
+    user.boost_active = True
+    user.boost_expires_at = _now_utc() + timedelta(hours=1)
+
+    if user.is_mining and user.mining_speed_snapshot is not None:
+        user.mining_speed_snapshot *= Decimal("2")
+
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+
+async def get_expired_boosts(
+    session: AsyncSession,
+) -> list[User]:
+    now = _now_utc()
+
+    result = await session.execute(
+        select(User).where(
+            User.boost_active.is_(True),
+            User.boost_expires_at.is_not(None),
+            User.boost_expires_at <= now,
+        )
+    )
+
+    return list(result.scalars().all())
+
+
+async def deactivate_boost(
+    session: AsyncSession,
+    user_id: int,
+) -> None:
+    user = await get_or_create_user(session, user_id)
+
+    user.mining_per_hour /= Decimal("2")
+    user.boost_active = False
+    user.boost_expires_at = None
+
+    if user.is_mining and user.mining_speed_snapshot is not None:
+        user.mining_speed_snapshot /= Decimal("2")
+
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)

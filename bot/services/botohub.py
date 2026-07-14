@@ -55,21 +55,23 @@ async def send_task_status(
 
     active_referrals_count = await get_referrals_count(session, user.id)
     total_balance = await get_total_balance(session, user.id)
+    me = await callback.bot.get_me()
 
     if skip or not tasks:
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
             f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
             f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
-            f"› 👥 Рефералов: <b>{active_referrals_count}</b>\n\n"
-            "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
+            f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
+            f"<blockquote>🔗 Твоя реф. ссылка: <code>https://t.me/{me.username}?start=r_{callback.from_user.id}</code>\n\n"
+            "🎁 Ты будешь получать +0.1⭐/час за каждого друга с активным генератором</blockquote>"
         )
         await callback.message.answer(text, reply_markup=get_mining_keyboard())
         await start_miner(session, user_id)
         return True
     elif not completed:
         text = (
-            "‼️<b>ПОСЛЕ ПОДПИСКИ НА ЭТИ КАНАЛЫ ТЫ БУДЕШЬ ПОЛУЧАТЬ 1⭐/ЧАС НИЧЕГО НЕ ДЕЛАЯ:</b>\n\n"
+            "❗<b>Подпишись на эти каналы, чтобы получать 1⭐/час ничего не делая:</b>\n\n"
             "<blockquote>❤️ Не у всех есть такая уникальная возможность!</blockquote>"
         )
         await callback.message.answer(
@@ -82,8 +84,9 @@ async def send_task_status(
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
             f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
             f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
-            f"› 👥 Рефералов: <b>{active_referrals_count}</b>\n\n"
-            "<blockquote>🚀 Генератор создает ⭐ прямо сейчас!</blockquote>"
+            f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
+            f"<blockquote>🔗 Твоя реф. ссылка: <code>https://t.me/{me.username}?start=r_{callback.from_user.id}</code>\n\n"
+            "🎁 Ты будешь получать +0.1⭐/час за каждого друга с активным генератором</blockquote>"
         )
         await callback.message.answer(text, reply_markup=get_mining_keyboard())
         await start_miner(session, user_id)

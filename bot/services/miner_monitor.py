@@ -18,8 +18,6 @@ from database.repositories.user_repositories import (
 
 logger = logging.getLogger(__name__)
 
-INACTIVE_WARNING_MINUTES = 1
-
 
 class MinerMonitor:
     def __init__(self, bot: Bot, sessionmaker: async_sessionmaker):
@@ -31,18 +29,15 @@ class MinerMonitor:
         return datetime.now(timezone.utc)
 
     async def _notify_inactive_users(self, session) -> None:
-        cutoff = (await self._utc_now()) - timedelta(minutes=INACTIVE_WARNING_MINUTES)
+        cutoff = (await self._utc_now()) - timedelta(hours=2)
         inactive_users = await get_inactive_users_for_warning(session, cutoff)
 
         for user in inactive_users:
             with suppress(Exception):
-                active_referrals_count = await get_referrals_count(session, user.id)
                 total_balance = await get_total_balance(session, user.id)
                 text = (
                     "⚠️ <b>ГЕНЕРАТОР ДАВНО НЕ РАБОТАЛ</b>\n\n"
-                    f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
-                    f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
-                    f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
+                    f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n\n"
                     "<b>Запусти генератор, чтобы получать ⭐</b>"
                 )
                 await self.bot.send_message(
@@ -63,12 +58,12 @@ class MinerMonitor:
                             )
                             total_balance = await get_total_balance(session, user.id)
                             text = (
-                                "🔴 <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"
+                                "❌ <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"
                                 f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
                                 f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
                                 f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n\n"
-                                f"<b>Нажми на кнопку ниже, чтобы запустить генератор!</b>\n\n"
                                 "<blockquote>⚠️ Пока генератор выключен, ⭐ не начисляются.</blockquote>"
+                                f"<b>⬇️Нажми на кнопку ниже, чтобы запустить генератор!</b>\n\n"
                             )
                             await self.bot.send_message(
                                 user.id, text, reply_markup=get_start_miner_keyboard()

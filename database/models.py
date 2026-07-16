@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     BigInteger,
@@ -6,6 +6,7 @@ from sqlalchemy import (
     ForeignKey,
     Numeric,
     Boolean,
+    String,
 )
 from sqlalchemy.orm import mapped_column, relationship
 
@@ -47,3 +48,17 @@ class Referral(Base):
         back_populates="referral",
         foreign_keys=[user_id],
     )
+
+
+class WithdrawRequest(Base):
+    __tablename__ = "withdraw_requests"
+
+    id = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = mapped_column(BigInteger, ForeignKey("users.id"))
+    username = mapped_column(String)
+    amount = mapped_column(Numeric(12, 4))
+    status = mapped_column(String(20), default="pending")
+    created_at = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    processed_at = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User")

@@ -5,7 +5,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import Referral, User
+from database import Referral, User, WithdrawRequest
 
 
 def _now_utc() -> datetime:
@@ -161,6 +161,8 @@ async def get_currently_mined(user: User) -> Decimal:
     elapsed_seconds = (now - mining_start).total_seconds()
     if elapsed_seconds < 0:
         return Decimal("0")
+
+    elapsed_seconds = min(elapsed_seconds, 3600)
 
     stars_per_second = user.mining_speed_snapshot / Decimal("3600")
     return Decimal(str(elapsed_seconds)) * stars_per_second
@@ -325,3 +327,104 @@ async def deactivate_boost(
     session.add(user)
     await session.commit()
     await session.refresh(user)
+
+async def create_withdraw_request(
+    session: AsyncSession,
+    user_id: int,
+    amount: Decimal,
+    username: str,
+) -> WithdrawRequest | None:
+    user = await session.get(User, user_id)
+    if user is None:
+        return None
+
+    currently_mined = await get_currently_mined(user)
+    total_balance = user.balance + currently_mined
+
+    if amount > total_balance:
+        return None
+
+    if user.is_mining and currently_mined > Decimal("0"):
+        user.balance += currently_mined
+        user.mining_started_at = _now_utc()
+
+    user.balance -= amount
+
+    withdraw_request = WithdrawRequest(
+        user_id=user_id,
+        username=username,
+        amount=amount,
+        status="pending",
+    )
+
+    session.add(user)
+    session.add(withdraw_request)
+
+    await session.commit()
+    await session.refresh(withdraw_request)
+
+    return withdraw_request
+
+
+async def get_pending_withdraws(
+    session: AsyncSession,
+) -> list[WithdrawRequest]:
+    result = await session.execute(
+        select(WithdrawRequest).where(
+            WithdrawRequest.status == "pending",
+        )
+    )
+    return list(result.scalars().all())
+
+
+async def get_user_withdraws(
+    session: AsyncSession,
+    user_id: int,
+) -> list[WithdrawRequest]:
+    result = await session.execute(
+        select(WithdrawRequest)
+        .where(WithdrawRequest.user_id == user_id)
+        .order_by(WithdrawRequest.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+async def approve_withdraw(
+    session: AsyncSession,
+    withdraw_id: int,
+) -> WithdrawRequest | None:
+    withdraw_request = await session.get(WithdrawRequest, withdraw_id)
+    if withdraw_request is None or withdraw_request.status != "pending":
+        return None
+
+    withdraw_request.status = "completed"
+    withdraw_request.processed_at = _now_utc()
+
+    session.add(withdraw_request)
+    await session.commit()
+    await session.refresh(withdraw_request)
+
+    return withdraw_request
+
+
+async def reject_withdraw(
+    session: AsyncSession,
+    withdraw_id: int,
+) -> WithdrawRequest | None:
+    withdraw_request = await session.get(WithdrawRequest, withdraw_id)
+    if withdraw_request is None or withdraw_request.status != "pending":
+        return None
+
+    user = await session.get(User, withdraw_request.user_id)
+    if user is not None:
+        user.balance += withdraw_request.amount
+        session.add(user)
+
+    withdraw_request.status = "rejected"
+    withdraw_request.processed_at = _now_utc()
+
+    session.add(withdraw_request)
+    await session.commit()
+    await session.refresh(withdraw_request)
+
+    return withdraw_request

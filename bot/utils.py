@@ -1,8 +1,10 @@
 import logging
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Tuple, Optional
 from contextlib import asynccontextmanager
+from decimal import Decimal, InvalidOperation
 
 from aiogram import Bot
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 logger = logging.getLogger(__name__)
@@ -63,3 +65,39 @@ def format_speed(value: Any) -> str:
 
 def get_boost_status_line(boost_active: bool) -> str:
     return "› 🚀 Буст x2 <b>активирован</b>\n\n" if boost_active else ""
+
+
+def validate_withdraw_amount(
+    text: str,
+    total_balance: Decimal,
+    min_amount: Decimal = Decimal("50"),
+) -> Tuple[Optional[Decimal], Optional[str]]:
+    try:
+        amount = Decimal(text.strip().replace(",", "."))
+    except (InvalidOperation, ValueError, AttributeError):
+        return None, "❌ Неверный формат суммы. Введи число (например: 10 или 10.5)"
+
+    if amount < min_amount:
+        return None, f"❌ Минимальная сумма для вывода — {min_amount}⭐"
+
+    if amount > total_balance:
+        return None, f"❌ Недостаточно средств. Доступно: {format_balance(total_balance)} ⭐"
+
+    return amount, None
+
+def normalize_username(raw: str) -> str | None:
+    text = raw.strip()
+    try:
+        if text.startswith("@"):
+            text = text[1:]
+
+        if not (3 <= len(text) <= 32):
+            return None
+        if not all(c.isalnum() or c == "_" for c in text):
+            return None
+        if not text[0].isalpha():
+            return None
+    except Exception:
+        return None
+    
+    return text

@@ -19,6 +19,10 @@ from database.repositories.user_repositories import (
     get_user_by_id,
     mark_user_activity,
 )
+from database.repositories.admin_repositories import (
+    get_tracking_link_by_code,
+    track_event,
+)
 
 router = Router()
 
@@ -62,6 +66,12 @@ async def start_handler(
                                 referrer_id,
                             )
 
+            elif option == "track":
+
+                link = await get_tracking_link_by_code(session, value)
+                if link:
+                    await track_event(session, link.id, user_id, "start")
+
     active_referrals_count = await get_referrals_count(session, user.id)
 
     total_balance = await get_total_balance(session, user.id)
@@ -79,7 +89,9 @@ async def start_handler(
             f"<blockquote>🔗 Твоя реф. ссылка: <code>https://t.me/{me.username}?start=r_{message.from_user.id}</code>\n\n"
             "🎁 Ты будешь получать +0.1⭐/час за каждого друга с активным генератором</blockquote>"
         )
-        await message.answer(text, reply_markup=get_mining_keyboard(me.username, user_id))
+        await message.answer(
+            text, reply_markup=get_mining_keyboard(me.username, user_id)
+        )
     else:
         text = (
             "❌ <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"

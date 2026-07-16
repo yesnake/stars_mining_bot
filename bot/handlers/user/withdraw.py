@@ -40,7 +40,7 @@ async def withdraw_handler(
 
     user_id = callback.from_user.id
 
-    user = await get_or_create_user(session, user_id)
+    await get_or_create_user(session, user_id)
     await mark_user_activity(session, user_id)
 
     total_balance = await get_total_balance(session, user_id)
@@ -63,7 +63,7 @@ async def process_withdraw_amount(
 ) -> None:
     user_id = message.from_user.id
 
-    user = await get_or_create_user(session, user_id)
+    await get_or_create_user(session, user_id)
     await mark_user_activity(session, user_id)
 
     total_balance = await get_total_balance(session, user_id)
@@ -151,4 +151,24 @@ async def process_withdraw_username(
         "Средства списаны с баланса.</blockquote>"
     )
     await message.answer(text, reply_markup=get_back_to_miner_keyboard())
-    await message.bot.send_message(config.WITHDRAW_CHANNEL_ID, text, reply_markup=get_back_to_miner_keyboard())
+
+    from bot.keyboards.admin_keyboards import get_withdraw_decision_keyboard
+
+    admin_text = (
+        f"💸 <b>НОВАЯ ЗАЯВКА НА ВЫВОД</b>\n\n"
+        f"› 🆔 ID заявки: <code>{withdraw_request.id}</code>\n"
+        f"› 👤 ID юзера: <code>{user_id}</code>\n"
+        f"› 👤 Username: @{username}\n"
+        f"› 💰 Сумма: <b>{format_balance(amount)} ⭐</b>\n"
+        f"› 📅 Дата: {withdraw_request.created_at.strftime('%Y-%m-%d %H:%M')}"
+    )
+
+    sent_message = await message.bot.send_message(
+        config.WITHDRAW_CHANNEL_ID,
+        admin_text,
+        reply_markup=get_withdraw_decision_keyboard(withdraw_request.id)
+    )
+
+    withdraw_request.message_id = sent_message.message_id
+    session.add(withdraw_request)
+    await session.commit()

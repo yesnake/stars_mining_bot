@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import (
 
 from database import Base
 
-from bot.middlewares import DBSessionMiddleware, error_handler
+from bot.middlewares import DBSessionMiddleware, error_handler, BanCheckMiddleware
 from bot.handlers import setup_routers
 
 from config_reader import config
@@ -53,6 +53,7 @@ bot = Bot(
 dp = Dispatcher()
 dp.include_routers(*setup_routers())
 dp.update.middleware(DBSessionMiddleware(_sessionmaker))
+dp.update.middleware(BanCheckMiddleware())
 dp.error.register(error_handler)
 
 miner_monitor = MinerMonitor(bot, _sessionmaker)

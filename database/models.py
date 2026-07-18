@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    Integer,
     BigInteger,
     DateTime,
     ForeignKey,
@@ -53,12 +54,14 @@ class Referral(Base):
 class WithdrawRequest(Base):
     __tablename__ = "withdraw_requests"
 
-    id = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id = mapped_column(BigInteger, ForeignKey("users.id"))
     username = mapped_column(String)
     amount = mapped_column(Numeric(12, 4))
     status = mapped_column(String(20), default="pending")
-    created_at = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
     processed_at = mapped_column(DateTime(timezone=True), nullable=True)
     message_id = mapped_column(BigInteger, nullable=True)
 
@@ -68,10 +71,12 @@ class WithdrawRequest(Base):
 class TrackingLink(Base):
     __tablename__ = "tracking_links"
 
-    id = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
     link_code = mapped_column(String(50), unique=True, nullable=False)
     name = mapped_column(String(255), nullable=False)
-    created_at = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
     total_starts = mapped_column(BigInteger, default=0)
     total_miners = mapped_column(BigInteger, default=0)
 
@@ -79,11 +84,13 @@ class TrackingLink(Base):
 class TrackingEvent(Base):
     __tablename__ = "tracking_events"
 
-    id = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
     link_id = mapped_column(BigInteger, ForeignKey("tracking_links.id"))
     user_id = mapped_column(BigInteger, ForeignKey("users.id"))
     event_type = mapped_column(String(20))
-    created_at = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
     link = relationship("TrackingLink")
     user = relationship("User")
@@ -92,14 +99,16 @@ class TrackingEvent(Base):
 class Broadcast(Base):
     __tablename__ = "broadcasts"
 
-    id = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
     text = mapped_column(String, nullable=True)
     media_type = mapped_column(String(20), nullable=True)
     media_file_id = mapped_column(String, nullable=True)
     caption = mapped_column(String, nullable=True)
     button_text = mapped_column(String, nullable=True)
     button_url = mapped_column(String, nullable=True)
-    created_at = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
     sent_count = mapped_column(BigInteger, default=0)
     failed_count = mapped_column(BigInteger, default=0)
     status = mapped_column(String(20), default="pending")

@@ -9,16 +9,16 @@ logger = logging.getLogger(__name__)
 
 class Config(BaseSettings):
     BOT_TOKEN: SecretStr
-    DB_URL: SecretStr
     BOTOHUB_TOKEN: SecretStr
+    DB_URL: str
     ADMIN_ID: int
     WITHDRAW_CHANNEL_ID: int
-
+    
     model_config = SettingsConfigDict(
         env_file=join(dirname(__file__), ".env"), env_file_encoding="utf-8"
     )
 
-    @field_validator("BOT_TOKEN", "DB_URL", "BOTOHUB_TOKEN")
+    @field_validator("BOT_TOKEN", "BOTOHUB_TOKEN")
     @classmethod
     def validate_not_empty(cls, v: SecretStr) -> SecretStr:
         if not v.get_secret_value().strip():

@@ -39,42 +39,42 @@ async def start_handler(
     user_id = message.from_user.id
 
     is_new_user = await get_user_by_id(session, user_id) is None
-    user = await get_or_create_user(session, user_id)
+    await get_or_create_user(session, user_id)
     await mark_user_activity(session, user_id)
+    user = await get_or_create_user(session, user_id)
 
-    if is_new_user and command.args:
+    if command.args:
         with suppress(ValueError):
             option, value = command.args.split("_", 1)
 
-            if option == "r":
+            if option == "r" and is_new_user:
                 referrer_id = int(value)
 
-                if referrer_id != user.id:
+                if referrer_id != user_id:
                     referrer = await get_user_by_id(session, referrer_id)
 
                     if referrer:
                         referral = await check_referral(
                             session,
-                            user.id,
+                            user_id,
                             referrer_id,
                         )
 
                         if referral is None:
                             await create_referral(
                                 session,
-                                user.id,
+                                user_id,
                                 referrer_id,
                             )
 
             elif option == "track":
-
                 link = await get_tracking_link_by_code(session, value)
                 if link:
                     await track_event(session, link.id, user_id, "start")
 
-    active_referrals_count = await get_referrals_count(session, user.id)
+    active_referrals_count = await get_referrals_count(session, user_id)
 
-    total_balance = await get_total_balance(session, user.id)
+    total_balance = await get_total_balance(session, user_id)
     me = await message.bot.get_me()
 
     boost_line = get_boost_status_line(user.boost_active)

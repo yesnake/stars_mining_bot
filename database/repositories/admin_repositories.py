@@ -23,15 +23,15 @@ async def get_bot_stats(session: AsyncSession) -> dict:
     ) or Decimal("0")
 
     pending_withdraws = await session.scalar(
-        select(func.count()).select_from(WithdrawRequest).where(
-            WithdrawRequest.status == "pending"
-        )
+        select(func.count())
+        .select_from(WithdrawRequest)
+        .where(WithdrawRequest.status == "pending")
     )
 
     total_withdrawn = await session.scalar(
-        select(func.sum(WithdrawRequest.amount)).select_from(WithdrawRequest).where(
-            WithdrawRequest.status == "completed"
-        )
+        select(func.sum(WithdrawRequest.amount))
+        .select_from(WithdrawRequest)
+        .where(WithdrawRequest.status == "completed")
     ) or Decimal("0")
 
     banned_users = await session.scalar(
@@ -114,10 +114,7 @@ async def get_all_users(
     offset: int = 0,
 ) -> list[User]:
     result = await session.execute(
-        select(User)
-        .order_by(desc(User.last_activity_at))
-        .limit(limit)
-        .offset(offset)
+        select(User).order_by(desc(User.last_activity_at)).limit(limit).offset(offset)
     )
     return list(result.scalars().all())
 
@@ -227,6 +224,7 @@ async def create_broadcast(
     caption: str | None = None,
     button_text: str | None = None,
     button_url: str | None = None,
+    target_group: str = "all",
 ) -> Broadcast:
     broadcast = Broadcast(
         text=text,
@@ -235,6 +233,7 @@ async def create_broadcast(
         caption=caption,
         button_text=button_text,
         button_url=button_url,
+        target_group=target_group,
     )
     session.add(broadcast)
     await session.commit()
@@ -259,7 +258,25 @@ async def update_broadcast_stats(
 
 
 async def get_all_active_user_ids(session: AsyncSession) -> list[int]:
+    result = await session.execute(select(User.id).where(User.is_banned.is_(False)))
+    return list(result.scalars().all())
+
+
+async def get_users_with_miner_on(session: AsyncSession) -> list[int]:
     result = await session.execute(
-        select(User.id).where(User.is_banned.is_(False))
+        select(User.id).where(
+            User.is_banned.is_(False),
+            User.is_mining.is_(True),
+        )
+    )
+    return list(result.scalars().all())
+
+
+async def get_users_with_miner_off(session: AsyncSession) -> list[int]:
+    result = await session.execute(
+        select(User.id).where(
+            User.is_banned.is_(False),
+            User.is_mining.is_(False),
+        )
     )
     return list(result.scalars().all())

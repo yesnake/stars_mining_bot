@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from decimal import Decimal, InvalidOperation
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest
+from aiogram.types import CallbackQuery
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -56,6 +58,35 @@ def format_balance(value: Any) -> str:
         return "0.0000"
 
 
+async def safe_callback_answer(
+    callback: CallbackQuery,
+    **kwargs: Any,
+) -> None:
+    try:
+        await callback.answer(**kwargs)
+    except TelegramBadRequest as error:
+        if "query is too old" not in str(error).lower():
+            raise
+
+
+async def safe_delete_callback_message(callback: CallbackQuery) -> None:
+    if callback.message is None:
+        return
+
+    try:
+        await callback.message.delete()
+    except AttributeError:
+        try:
+            await callback.bot.delete_message(
+                chat_id=callback.message.chat.id,
+                message_id=callback.message.message_id,
+            )
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
 def format_speed(value: Any) -> str:
     try:
         return f"{float(value):.2f}"
@@ -81,9 +112,13 @@ def validate_withdraw_amount(
         return None, f"❌ Минимальная сумма для вывода — {min_amount}⭐"
 
     if amount > total_balance:
-        return None, f"❌ Недостаточно средств. Доступно: {format_balance(total_balance)} ⭐"
+        return (
+            None,
+            f"❌ Недостаточно средств. Доступно: {format_balance(total_balance)} ⭐",
+        )
 
     return amount, None
+
 
 def normalize_username(raw: str) -> str | None:
     text = raw.strip()
@@ -99,5 +134,5 @@ def normalize_username(raw: str) -> str | None:
             return None
     except Exception:
         return None
-    
+
     return text

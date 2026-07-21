@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, desc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import Referral, User, WithdrawRequest
+from database import Referral, User, WithdrawRequest, TrackingEvent, TrackingLink
 
 
 def _now_utc() -> datetime:
@@ -196,6 +196,22 @@ async def mark_miner_warning_sent(
     await session.refresh(user)
 
 
+async def _get_latest_tracking_start_link_id(
+    session: AsyncSession,
+    user_id: int,
+) -> int | None:
+    result = await session.execute(
+        select(TrackingEvent.link_id)
+        .where(
+            TrackingEvent.user_id == user_id,
+            TrackingEvent.event_type == "start",
+        )
+        .order_by(desc(TrackingEvent.created_at))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 async def start_miner(
     session: AsyncSession,
     user_id: int,
@@ -216,6 +232,35 @@ async def start_miner(
         referrer = await get_or_create_user(session, referral.user_id)
         referrer.mining_per_hour += Decimal("0.1")
         referral.is_active = True
+
+    await session.commit()
+
+    latest_tracking_link_id = await _get_latest_tracking_start_link_id(session, user_id)
+    if latest_tracking_link_id is None:
+        return
+
+    existing_miner_event = await session.execute(
+        select(TrackingEvent)
+        .where(
+            TrackingEvent.user_id == user_id,
+            TrackingEvent.link_id == latest_tracking_link_id,
+            TrackingEvent.event_type == "miner",
+        )
+    )
+    if existing_miner_event.scalar_one_or_none() is not None:
+        return
+
+    tracking_event = TrackingEvent(
+        link_id=latest_tracking_link_id,
+        user_id=user_id,
+        event_type="miner",
+    )
+    session.add(tracking_event)
+
+    tracking_link = await session.get(TrackingLink, latest_tracking_link_id)
+    if tracking_link is not None:
+        tracking_link.total_miners += 1
+        session.add(tracking_link)
 
     await session.commit()
 

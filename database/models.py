@@ -106,6 +106,7 @@ class Broadcast(Base):
     caption = mapped_column(String, nullable=True)
     button_text = mapped_column(String, nullable=True)
     button_url = mapped_column(String, nullable=True)
+    target_group = mapped_column(String(20), default="all")
     created_at = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

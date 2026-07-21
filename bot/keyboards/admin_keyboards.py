@@ -22,13 +22,13 @@ def get_admin_main_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="👥 Управление юзерами",
+                    text="🔧 Управление юзерами",
                     callback_data="admin_users",
                 ),
             ],
             [
                 InlineKeyboardButton(
-                    text="💸 Заявки на вывод",
+                    text="💰 Заявки на вывод",
                     callback_data="admin_withdraws",
                 ),
             ],
@@ -165,6 +165,38 @@ def get_broadcast_keyboard() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="📝 Создать рассылку",
                     callback_data="admin_create_broadcast",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🔙 Назад",
+                    callback_data="admin_panel",
+                )
+            ],
+        ]
+    )
+    return keyboard
+
+
+def get_broadcast_target_keyboard() -> InlineKeyboardMarkup:
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🟢 Майнер включен",
+                    callback_data="broadcast_target:miner_on",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🔴 Майнер выключен",
+                    callback_data="broadcast_target:miner_off",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="👥 Все пользователи",
+                    callback_data="broadcast_target:all",
                 )
             ],
             [

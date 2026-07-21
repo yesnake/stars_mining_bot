@@ -3,7 +3,13 @@ import aiohttp
 from aiogram.types import CallbackQuery
 
 from bot.keyboards.user_keyboards import get_mining_keyboard, get_task_keyboard
-from bot.utils import format_balance, format_speed, get_boost_status_line
+from bot.utils import (
+    format_balance,
+    format_speed,
+    get_boost_status_line,
+    safe_callback_answer,
+    safe_delete_callback_message,
+)
 
 from database.repositories.user_repositories import (
     start_miner,
@@ -72,7 +78,9 @@ async def send_task_status(
             f"<blockquote>🔗 Твоя реф. ссылка: <code>https://t.me/{me.username}?start=r_{callback.from_user.id}</code>\n\n"
             "🎁 Ты будешь получать +0.1⭐/час за каждого друга с активным генератором</blockquote>"
         )
-        await callback.message.answer(text, reply_markup=get_mining_keyboard(me.username, user_id))
+        await callback.message.answer(
+            text, reply_markup=get_mining_keyboard(me.username, user_id)
+        )
         await start_miner(session, user_id)
         return True
     elif not completed:
@@ -95,7 +103,9 @@ async def send_task_status(
             f"<blockquote>🔗 Твоя реф. ссылка: <code>https://t.me/{me.username}?start=r_{callback.from_user.id}</code>\n\n"
             "🎁 Ты будешь получать +0.1⭐/час за каждого друга с активным генератором</blockquote>"
         )
-        await callback.message.answer(text, reply_markup=get_mining_keyboard(me.username, user_id))
+        await callback.message.answer(
+            text, reply_markup=get_mining_keyboard(me.username, user_id)
+        )
         await start_miner(session, user_id)
         return True
 
@@ -111,20 +121,26 @@ async def send_task_boost_status(
     skip = response.get("skip")
 
     if not user.is_mining:
-        await callback.answer("🚀 Сначала запусти генератор!", show_alert=True)
+        await safe_callback_answer(
+            callback, text="🚀 Сначала запусти генератор!", show_alert=True
+        )
         return
 
     if user.boost_active:
-        await callback.answer("⚡ У тебя уже активирован буст!", show_alert=True)
+        await safe_callback_answer(
+            callback, text="⚡ У тебя уже активирован буст!", show_alert=True
+        )
         return
 
     if skip:
-        await callback.answer(
-            "Сейчас заданий для буста нет. Приходи позже! ✨", show_alert=True
+        await safe_callback_answer(
+            callback,
+            text="Сейчас заданий для буста нет. Приходи позже! ✨",
+            show_alert=True,
         )
         return False
     elif not completed:
-        await callback.message.delete()
+        await safe_delete_callback_message(callback)
         await callback.message.answer(
             "❗<b>Подпишись на эти каналы, чтобы активировать x2 буст на 1 час:</b>\n\n",
             reply_markup=get_task_keyboard(tasks, user_id, is_boost=True),
@@ -139,7 +155,7 @@ async def send_task_boost_status(
         me = await callback.bot.get_me()
         boost_line = get_boost_status_line(user.boost_active)
 
-        await callback.message.delete()
+        await safe_delete_callback_message(callback)
 
         text = (
             "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
@@ -150,5 +166,7 @@ async def send_task_boost_status(
             f"<blockquote>🔗 Твоя реф. ссылка: <code>https://t.me/{me.username}?start=r_{callback.from_user.id}</code>\n\n"
             "🎁 Ты будешь получать +0.1⭐/час за каждого друга с активным генератором</blockquote>"
         )
-        await callback.message.answer(text, reply_markup=get_mining_keyboard(me.username, user_id))
+        await callback.message.answer(
+            text, reply_markup=get_mining_keyboard(me.username, user_id)
+        )
         return True

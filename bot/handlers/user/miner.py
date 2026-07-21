@@ -6,7 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards.user_keyboards import get_mining_keyboard, get_start_miner_keyboard
 from bot.services.botohub import send_task_status, send_task_boost_status
-from bot.utils import format_balance, format_speed, get_boost_status_line
+from bot.utils import (
+    format_balance,
+    format_speed,
+    get_boost_status_line,
+    safe_callback_answer,
+    safe_delete_callback_message,
+)
 
 from database.repositories.user_repositories import (
     get_or_create_user,
@@ -24,7 +30,7 @@ async def start_miner_handler(
     session: AsyncSession,
     state: FSMContext,
 ) -> None:
-    await callback.answer()
+    await safe_callback_answer(callback)
 
     await state.clear()
 
@@ -33,7 +39,7 @@ async def start_miner_handler(
     user = await get_or_create_user(session, user_id)
     await mark_user_activity(session, user_id)
 
-    await callback.message.delete()
+    await safe_delete_callback_message(callback)
 
     await send_task_status(session, callback, user_id)
 
@@ -44,7 +50,7 @@ async def check_tasks_handler(
     session: AsyncSession,
     state: FSMContext,
 ) -> None:
-    await callback.answer()
+    await safe_callback_answer(callback)
 
     await state.clear()
 
@@ -52,7 +58,7 @@ async def check_tasks_handler(
     user = await get_or_create_user(session, user_id)
     await mark_user_activity(session, user_id)
 
-    await callback.message.delete()
+    await safe_delete_callback_message(callback)
 
     await send_task_status(session, callback, user_id)
 
@@ -63,7 +69,7 @@ async def refresh_miner_handler(
     session: AsyncSession,
     state: FSMContext,
 ) -> None:
-    await callback.answer()
+    await safe_callback_answer(callback)
 
     await state.clear()
 
@@ -72,10 +78,10 @@ async def refresh_miner_handler(
     user = await get_or_create_user(session, user_id)
     await mark_user_activity(session, user_id)
 
-    await callback.message.delete()
+    await safe_delete_callback_message(callback)
 
-    active_referrals_count = await get_referrals_count(session, user.id)
-    total_balance = await get_total_balance(session, user.id)
+    active_referrals_count = await get_referrals_count(session, user_id)
+    total_balance = await get_total_balance(session, user_id)
     me = await callback.bot.get_me()
 
     boost_line = get_boost_status_line(user.boost_active)
@@ -90,7 +96,9 @@ async def refresh_miner_handler(
             f"<blockquote>🔗 Твоя реф. ссылка: <code>https://t.me/{me.username}?start=r_{callback.from_user.id}</code>\n\n"
             "🎁 Ты будешь получать +0.1⭐/час за каждого друга с активным генератором</blockquote>"
         )
-        await callback.message.answer(text, reply_markup=get_mining_keyboard(me.username, user_id))
+        await callback.message.answer(
+            text, reply_markup=get_mining_keyboard(me.username, user_id)
+        )
     else:
         text = (
             "❌ <b>ГЕНЕРАТОР ОСТАНОВЛЕН</b>\n\n"

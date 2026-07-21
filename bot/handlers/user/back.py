@@ -12,7 +12,13 @@ from database.repositories.user_repositories import (
 )
 
 from bot.keyboards.user_keyboards import get_mining_keyboard, get_start_miner_keyboard
-from bot.utils import format_balance, format_speed, get_boost_status_line
+from bot.utils import (
+    format_balance,
+    format_speed,
+    get_boost_status_line,
+    safe_callback_answer,
+    safe_delete_callback_message,
+)
 
 router = Router()
 
@@ -23,14 +29,14 @@ async def back_to_miner_handler(
     session: AsyncSession,
     state: FSMContext,
 ) -> None:
-    await callback.answer()
+    await safe_callback_answer(callback)
 
     await state.clear()
 
     user_id = callback.from_user.id
     await mark_user_activity(session, user_id)
 
-    await callback.message.delete()
+    await safe_delete_callback_message(callback)
 
     user = await get_or_create_user(session, user_id)
     active_referrals_count = await get_referrals_count(session, user.id)

@@ -6,4 +6,6 @@ from .models import (
     TrackingEvent,
     TrackingLink,
     Broadcast,
+    PromoCode,
+    PromoCodeUsage,
 )

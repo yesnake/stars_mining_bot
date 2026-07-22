@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from database import Base
 
-from database.models import User, Referral, WithdrawRequest
+from database.models import *
 
 
 async def init_database(engine: AsyncEngine) -> None:

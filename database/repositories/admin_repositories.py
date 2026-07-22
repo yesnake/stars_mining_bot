@@ -4,7 +4,14 @@ from decimal import Decimal
 from sqlalchemy import select, func, and_, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import User, WithdrawRequest, TrackingLink, TrackingEvent, Broadcast
+from database import (
+    User,
+    WithdrawRequest,
+    TrackingLink,
+    TrackingEvent,
+    Broadcast,
+    PromoCode,
+)
 
 
 def _now_utc() -> datetime:
@@ -280,3 +287,20 @@ async def get_users_with_miner_off(session: AsyncSession) -> list[int]:
         )
     )
     return list(result.scalars().all())
+
+
+async def create_promocode(
+    session: AsyncSession,
+    code: str,
+    activations: int,
+    stars: Decimal,
+) -> PromoCode | None:
+    existing = await session.scalar(select(PromoCode).where(PromoCode.code == code))
+    if existing:
+        return None
+
+    promocode = PromoCode(code=code, activations_left=activations, stars=stars)
+    session.add(promocode)
+    await session.commit()
+    await session.refresh(promocode)
+    return promocode

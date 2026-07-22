@@ -97,11 +97,29 @@ def get_back_to_miner_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🔙 Назад",
-                    callback_data="back_to_miner",
-                    style="danger"
+                    text="🔙 Назад", callback_data="back_to_miner", style="danger"
                 )
             ],
         ]
     )
     return keyboard
+
+
+def get_promocode_task_keyboard(
+    code: str, user_id: int, tasks: list[str]
+) -> InlineKeyboardMarkup:
+    rows = []
+    for task in tasks or []:
+        rows.append([InlineKeyboardButton(text="🔗 Перейти", url=task)])
+
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="✅ Проверить",
+                callback_data=f"check_promocode_tasks:{code}:{user_id}",
+            )
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+

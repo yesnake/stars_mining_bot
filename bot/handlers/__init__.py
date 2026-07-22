@@ -10,6 +10,8 @@ from .admin.tracking_links import router as admin_tracking_links_router
 from .admin.user_actions import router as admin_user_actions_router
 from .admin.broadcast import router as admin_broadcast_router
 from .admin.withdraw_management import router as admin_withdraw_management_router
+from .admin.promocode import router as admin_promocode_router
+from .user.promocode import router as promocode_router
 
 
 def setup_routers() -> list:
@@ -24,5 +26,7 @@ def setup_routers() -> list:
         admin_tracking_links_router,
         admin_user_actions_router,
         admin_broadcast_router,
+        admin_promocode_router,
         admin_withdraw_management_router,
+        promocode_router,
     ]

@@ -10,3 +10,6 @@ class AdminStates(StatesGroup):
     waiting_for_broadcast_content = State()
     waiting_for_broadcast_media = State()
     waiting_for_broadcast_button = State()
+    waiting_for_promocode_code = State()
+    waiting_for_promocode_activations = State()
+    waiting_for_promocode_amount = State()

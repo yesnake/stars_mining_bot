@@ -12,11 +12,12 @@ from bot.utils import (
 )
 
 from database.repositories.user_repositories import (
-    start_miner,
+    activate_boost,
+    award_promocode,
     get_or_create_user,
     get_referrals_count,
     get_total_balance,
-    activate_boost,
+    start_miner,
 )
 
 from sqlalchemy.ext.asyncio import AsyncSession

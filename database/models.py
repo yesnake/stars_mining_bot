@@ -113,3 +113,29 @@ class Broadcast(Base):
     sent_count = mapped_column(BigInteger, default=0)
     failed_count = mapped_column(BigInteger, default=0)
     status = mapped_column(String(20), default="pending")
+
+
+class PromoCode(Base):
+    __tablename__ = "promocodes"
+
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
+    code = mapped_column(String(100), unique=True, nullable=False)
+    activations_left = mapped_column(Integer, default=0)
+    stars = mapped_column(Numeric(12, 4), default=0)
+    created_at = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+
+class PromoCodeUsage(Base):
+    __tablename__ = "promocode_usages"
+
+    id = mapped_column(Integer, primary_key=True, autoincrement=True)
+    promocode_id = mapped_column(Integer, ForeignKey("promocodes.id"))
+    user_id = mapped_column(BigInteger, ForeignKey("users.id"))
+    used_at = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+    promocode = relationship("PromoCode")
+    user = relationship("User")

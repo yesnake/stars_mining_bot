@@ -22,6 +22,12 @@ def get_admin_main_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text="🎟️ Создать промокод",
+                    callback_data="admin_create_promocode",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
                     text="🔧 Управление юзерами",
                     callback_data="admin_users",
                 ),
@@ -208,3 +214,16 @@ def get_broadcast_target_keyboard() -> InlineKeyboardMarkup:
         ]
     )
     return keyboard
+
+
+def get_promocode_broadcast_markup(code: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🎁 Использовать",
+                    callback_data=f"use_promocode:{code}",
+                )
+            ]
+        ]
+    )

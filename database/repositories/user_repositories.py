@@ -6,10 +6,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import Referral, User, WithdrawRequest, TrackingEvent, TrackingLink
+from database.models import PromoCode, PromoCodeUsage
 
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
+
 
 async def get_or_create_user(
     session: AsyncSession,
@@ -240,8 +242,7 @@ async def start_miner(
         return
 
     existing_miner_event = await session.execute(
-        select(TrackingEvent)
-        .where(
+        select(TrackingEvent).where(
             TrackingEvent.user_id == user_id,
             TrackingEvent.link_id == latest_tracking_link_id,
             TrackingEvent.event_type == "miner",
@@ -373,6 +374,7 @@ async def deactivate_boost(
     await session.commit()
     await session.refresh(user)
 
+
 async def create_withdraw_request(
     session: AsyncSession,
     user_id: int,
@@ -473,3 +475,77 @@ async def reject_withdraw(
     await session.refresh(withdraw_request)
 
     return withdraw_request
+
+
+async def add_user_balance(
+    session: AsyncSession, user_id: int, amount: Decimal
+) -> None:
+    user = await get_or_create_user(session, user_id)
+    user.balance += amount
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+
+
+async def get_promocode_by_code(session: AsyncSession, code: str) -> PromoCode | None:
+    return await session.scalar(select(PromoCode).where(PromoCode.code == code))
+
+
+async def decrement_promocode_activation(
+    session: AsyncSession, promocode_id: int
+) -> bool:
+    result = await session.execute(
+        text(
+            "UPDATE promocodes SET activations_left = activations_left - 1 WHERE id = :id AND activations_left > 0"
+        ),
+        {"id": promocode_id},
+    )
+    if result.rowcount and result.rowcount > 0:
+        await session.commit()
+        return True
+    await session.rollback()
+    return False
+
+
+async def award_promocode(
+    session: AsyncSession,
+    promocode_id: int,
+    user_id: int,
+    stars: Decimal,
+) -> bool:
+    if not await decrement_promocode_activation(session, promocode_id):
+        return False
+
+    usage = PromoCodeUsage(promocode_id=promocode_id, user_id=user_id)
+    session.add(usage)
+
+    user = await session.get(User, user_id)
+    if user is None:
+        user = User(id=user_id)
+        session.add(user)
+
+    user.balance += stars
+    await session.commit()
+    return True
+
+
+async def has_user_used_promocode(
+    session: AsyncSession, promocode_id: int, user_id: int
+) -> bool:
+    result = await session.execute(
+        select(PromoCodeUsage).where(
+            PromoCodeUsage.promocode_id == promocode_id,
+            PromoCodeUsage.user_id == user_id,
+        )
+    )
+    return result.scalar_one_or_none() is not None
+
+
+async def mark_promocode_used(
+    session: AsyncSession, promocode_id: int, user_id: int
+) -> None:
+    usage = PromoCodeUsage(promocode_id=promocode_id, user_id=user_id)
+    session.add(usage)
+    await session.commit()
+    await session.refresh(usage)
+    return usage

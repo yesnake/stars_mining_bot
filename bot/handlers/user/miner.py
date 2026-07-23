@@ -18,7 +18,9 @@ from database.repositories.user_repositories import (
     get_or_create_user,
     get_referrals_count,
     get_total_balance,
+    get_user_by_id,
     mark_user_activity,
+    start_miner,
 )
 
 router = Router()
@@ -36,10 +38,35 @@ async def start_miner_handler(
 
     user_id = callback.from_user.id
 
+    is_new_user = await get_user_by_id(session, user_id) is None
     user = await get_or_create_user(session, user_id)
     await mark_user_activity(session, user_id)
 
     await safe_delete_callback_message(callback)
+
+    if is_new_user:
+        await start_miner(session, user_id)
+
+        user = await get_or_create_user(session, user_id)
+        active_referrals_count = await get_referrals_count(session, user_id)
+        total_balance = await get_total_balance(session, user_id)
+        me = await callback.bot.get_me()
+
+        boost_line = get_boost_status_line(user.boost_active)
+
+        text = (
+            "🟢 <b>ГЕНЕРАТОР РАБОТАЕТ</b>\n\n"
+            f"› 💰 Баланс: <b>{format_balance(total_balance)} ⭐</b>\n"
+            f"› ⚡ Скорость: <b>{format_speed(user.mining_per_hour)} ⭐/час</b>\n"
+            f"› 👥 Активных рефералов: <b>{active_referrals_count}</b>\n"
+            f"{boost_line}"
+            f"<blockquote>🔗 Твоя реф. ссылка: <code>https://t.me/{me.username}?start=r_{callback.from_user.id}</code>\n\n"
+            "🎁 Ты будешь получать +0.1⭐/час за каждого друга с активным генератором</blockquote>"
+        )
+        await callback.message.answer(
+            text, reply_markup=get_mining_keyboard(me.username, user_id)
+        )
+        return
 
     await send_task_status(session, callback, user_id)
 

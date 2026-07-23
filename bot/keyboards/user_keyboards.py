@@ -19,15 +19,17 @@ def get_start_miner_keyboard() -> InlineKeyboardMarkup:
 def get_task_keyboard(
     tasks: list[str], user_id: int, is_boost: bool = False
 ) -> InlineKeyboardMarkup:
-    keyboard = [
-        [
+    keyboard = []
+
+    for i in range(0, len(tasks), 2):
+        row = [
             InlineKeyboardButton(
                 text="🔗 Перейти",
                 url=task,
             )
+            for task in tasks[i : i + 2]
         ]
-        for task in tasks
-    ]
+        keyboard.append(row)
 
     callback_data = (
         f"check_boost_tasks:{user_id}" if is_boost else f"check_tasks:{user_id}"
@@ -36,10 +38,13 @@ def get_task_keyboard(
     keyboard.append(
         [
             InlineKeyboardButton(
-                text="✅ Проверить", callback_data=callback_data, style="success"
+                text="✅ Проверить",
+                callback_data=callback_data,
+                style="success",
             )
         ]
     )
+
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
@@ -109,8 +114,14 @@ def get_promocode_task_keyboard(
     code: str, user_id: int, tasks: list[str]
 ) -> InlineKeyboardMarkup:
     rows = []
-    for task in tasks or []:
-        rows.append([InlineKeyboardButton(text="🔗 Перейти", url=task)])
+
+    for i in range(0, len(tasks or []), 2):
+        rows.append(
+            [
+                InlineKeyboardButton(text="🔗 Перейти", url=task)
+                for task in tasks[i : i + 2]
+            ]
+        )
 
     rows.append(
         [
@@ -120,6 +131,7 @@ def get_promocode_task_keyboard(
             )
         ]
     )
+
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

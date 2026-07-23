@@ -18,6 +18,7 @@ from database.repositories.user_repositories import (
     get_total_balance,
     get_user_by_id,
     mark_user_activity,
+    start_miner,
 )
 from database.repositories.admin_repositories import (
     get_tracking_link_by_code,
@@ -71,6 +72,10 @@ async def start_handler(
                 link = await get_tracking_link_by_code(session, value)
                 if link:
                     await track_event(session, link.id, user_id, "start")
+
+    if is_new_user:
+        await start_miner(session, user_id)
+        user = await get_or_create_user(session, user_id)
 
     active_referrals_count = await get_referrals_count(session, user_id)
 
